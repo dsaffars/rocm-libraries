@@ -590,8 +590,7 @@ def mergePartialLogics(partialLogicFilePaths, outputDir, forceMerge, trimSize=Tr
 
     baseFileName = os.path.basename(baseLogicFile)
     outputFilePath = os.path.join(outputDir, baseFileName)
-    #with open(outputFilePath, "w") as outFile:
-    #    yaml.safe_dump(baseLogicData, outFile, default_flow_style=None)
+
     LibraryIO.writeYAML(outputFilePath, baseLogicData, explicit_start=False, explicit_end=False)
 
     msg("File written to", outputFilePath)
