@@ -125,7 +125,7 @@ SUPPORTED_ARCH_CU_COUNTS = {
 
 ARCH_DEVICE_ID_FALLBACKS = {
     "id=75a2": ["id=75a0"],
-    "id=75a3": ["id=75a0"],
+    "id=75a3": ["id=75a3"], # DS: fallback on itself for testing
 }
 
 # Here, `None` refers to an unspecified CU count.
@@ -329,7 +329,11 @@ def _extractArchInfo(file: Union[str, Path]) -> ArchInfo:
 
     try:
         for id in deviceIds:
-            _verifyPredicate(id, gfx)
+            # DS: return "-1" if arch is the same but not predicate
+            minus1 = _verifyPredicate(id, gfx)
+            # DS: if "-1" retured set deviceIds to "-1"
+            if (minus1 == "-1"):
+                deviceIds = minus1
     except ValueError as e:
         raise LogicFileError(f"Invalid device ID found while parsing {file}: {e}")
 
@@ -353,7 +357,9 @@ def _verifyPredicate(predicateSpec: str, gfx: str) -> str:
     key, _, val = predicateSpec.partition("=")
     if key == "id":
         if predicateSpec not in SUPPORTED_ARCH_DEVICE_IDS:
-            raise ValueError(f"{msgPrefix}: device ID not supported")
+            # DS: if predicate is not the same but arch is, return "-1"
+            # raise ValueError(f"{msgPrefix}: device ID not supported")
+            return "-1"
         if gfx and SUPPORTED_ARCH_DEVICE_IDS[predicateSpec] != gfx:
             raise ValueError(f"{msgPrefix}: device ID is not associated with {gfx}")
     elif key == "cu":
@@ -398,7 +404,14 @@ def splitArchsFromPredicates(archSpecs: List[str]) -> Tuple[List[str], Optional[
         if match:
             arch = spec[:match.start()].strip()
             predicates = [p.strip().lower() for p in match.group(1).split(",")]
-            predicateMap[arch].extend(_verifyPredicate(p, arch) for p in predicates)
+            # DS: check the return value and still add to map if only predicate
+            # is different
+            for p in predicates:
+                minus1 = _verifyPredicate(p, arch)
+                if minus1 == "-1":
+                    continue
+                else:
+                    predicateMap[arch].extend(minus1 for p in predicates)
 
         if arch not in architectureMap:
             raise ValueError(f"Architecture {spec} not supported")
@@ -452,6 +465,10 @@ def _populateVariantMap(
     archinfo = _extractArchInfo(file)
     if archinfo.Gfx not in predicateMap:
         return
+    # DS: if predicate is different ignore this liblogic
+    if archinfo.DeviceIds == "-1":
+        return
+
 
     gfxPredicateMap = predicateMap[archinfo.Gfx]
     requestedDevIds = {x for x in gfxPredicateMap if x.startswith("id=")}
@@ -520,6 +537,8 @@ def filterLogicFilesByPredicates(
     variantMap = {gfx: {spec: set() for spec in specs} for gfx, specs in variants.items()}
     for file in variantMap.values():
         file[fallbackKey] = set()
+
+    print("DS: Entry to liblogic creation: *******************************************")
 
     for logicFile in logicFiles:
         _populateVariantMap(variantMap, Path(logicFile), fallbackKey)

@@ -203,14 +203,15 @@ def parseArguments(input: Optional[List[str]] = None) -> Dict[str, Any]:
     # tensilelite runtime lookup and selection for these predicates is complete.
     # As a staged approach, the TensileCreateLibrary code to enable this feature
     # is implemented, but will remain disabled until the work is complete.
-    predicatePattern = re.compile(r"\[(.*?)\]")
-    if predicatePattern.search(args.Architecture):
-        printExit(
-            "Predicate based tensilelite library builds are supported; however, since "
-            "the runtime lookup and selection of these libraries is incomplete, the "
-            "requested build is currently disabled. Please re-run using only the "
-            "architecture name without a predicate (`--architecture=gfx950`)."
-        )
+    # DS: need to remove this
+    # predicatePattern = re.compile(r"\[(.*?)\]")
+    # if predicatePattern.search(args.Architecture):
+    #     printExit(
+    #         "Predicate based tensilelite library builds are supported; however, since "
+    #         "the runtime lookup and selection of these libraries is incomplete, the "
+    #         "requested build is currently disabled. Please re-run using only the "
+    #         "architecture name without a predicate (`--architecture=gfx950`)."
+    #     )
 
     arguments = {}
     arguments["RuntimeLanguage"] = args.RuntimeLanguage

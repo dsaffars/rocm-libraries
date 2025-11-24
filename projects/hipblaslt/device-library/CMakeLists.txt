@@ -13,9 +13,10 @@ set(TENSILELITE_ENABLE_ASM_COMMENTS OFF CACHE STRING "Turn on asm comments when 
 
 set(HIPBLASLT_TENSILE_LIBPATH "${hipblaslt_BINARY_DIR}/Tensile" CACHE STRING "Path to output the device gemm libraries.")
 file(MAKE_DIRECTORY "${HIPBLASLT_TENSILE_LIBPATH}/library")
-
+# DS: Need to extract predicates from GPU_TARGETS
 list(JOIN GPU_TARGETS "$<SEMICOLON>" TENSILELITE_GPU_TARGETS_SEMI_ESCAPED)
 
+# DS: next command will populates the arch and predicate
 set(TENSILELITE_BUILD_OPTS ${TENSILELITE_BUILD_OPTS} "--architecture=${TENSILELITE_GPU_TARGETS_SEMI_ESCAPED}")
 set(TENSILELITE_BUILD_OPTS ${TENSILELITE_BUILD_OPTS} "--cxx-compiler=${CMAKE_CXX_COMPILER}")
 if(HIPBLASLT_ENABLE_ASAN)
@@ -56,7 +57,7 @@ endif()
 set(output_stamp "${CMAKE_CURRENT_BINARY_DIR}/Tensile.stamp")
 set(TENSILE_CREATE_LIBRARY_COMMAND
     ${HIPBLASLT_PYTHON_COMMAND} -m Tensile.TensileCreateLibrary
-    ${TENSILELITE_BUILD_OPTS}
+    ${TENSILELITE_BUILD_OPTS} #DS can hard code arch for now --architecture=gfx950[id=75a3]
     ${HIPBLASLT_LIBLOGIC_PATH}
     "${HIPBLASLT_TENSILE_LIBPATH}"
     HIP

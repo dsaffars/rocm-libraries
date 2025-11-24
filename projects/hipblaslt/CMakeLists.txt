@@ -100,6 +100,7 @@ set(GPU_TARGETS "" CACHE STRING "AMD GFX targets to cross-compile")
 if(NOT GPU_TARGETS OR GPU_TARGETS STREQUAL "all")
     tensilelite_get_base_architectures(GPU_TARGETS)
 else()
+    #DS: Need to modify this if we need to pass predicates to install.sh
     tensilelite_validate_gpu_targets("${GPU_TARGETS}")
 endif()
 message(STATUS "Building for GPU targets: ${GPU_TARGETS}")
