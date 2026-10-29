@@ -207,6 +207,18 @@ class CodegenChecker:
     """TensileLite set up as ``Tensile <config> --cpu-only --gpu-targets <arch>`` does, for one GEMM type."""
 
     def __init__(self, config_path: Path, arch: str):
+        """Set up a CPU-only TensileLite code generator for one probe config.
+
+        Args:
+            config_path: Tensile config YAML for this probe.
+            arch: ARCH key. The checker uses the compiler-target name.
+
+        Returns:
+            None
+
+        Raises:
+            ImportError: If TensileLite cannot be imported.
+        """
         from tensilelite import LibraryIO
         from tensilelite.BenchmarkStructs import BenchmarkProcess
         from tensilelite.Common import makeDebugConfig
@@ -518,6 +530,21 @@ class SettingSearch:
         return out
 
     def core(self, mi: MI, entry: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
+        """Yield the factorial settings for one matrix instruction.
+
+        DepthU is only the two smallest legal values. Every other tuned
+        group is the full product of its entries, not its cheapest value alone.
+
+        Args:
+            mi: Candidate matrix instruction. The entry already carries it.
+            entry: One matrix-instruction group entry from the space.
+
+        Returns:
+            Settings to try.
+
+        Raises:
+            None
+        """
         env = self.space.fork
         width = [-1, self.read_width(2)]
         wanted = {

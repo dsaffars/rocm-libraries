@@ -6,10 +6,13 @@ Reviewed head: `34b56c1c741265cdc4bc5f17a0f1c7c1d869cf99`. Diff base: `501708505
 
 | Review item | Commit | Change |
 | --- | --- | --- |
-| List files are larger than the loader reads | uncommitted | Factored `.txt` lists on this branch. 148 files, 374,446 bytes, 96 `same_as` aliases. |
-| Title and description | none | Recommended text is below. Not applied to GitHub. |
-| Committed lists are not loaded by a test | uncommitted | `test_committed_lists_expand_to_nine_integers` loads every committed list. |
-| Search limits are wider than the description | none | No fix on this branch. |
+| List files are larger than the loader reads | `bb1220924d09` | Factored `.txt` lists. 148 files, 374,446 bytes, 96 `same_as` aliases. |
+| Title and description | none | Recommended text is below. Not posted. This review does not edit GitHub. |
+| Committed lists are not loaded by a test | `bb1220924d09` | `test_committed_lists_expand_to_nine_integers` loads every committed list. |
+| Search limits are wider than the description | this commit | `SettingSearch.core` documents the two-DepthU limit and the full group product. The search code is unchanged. The corrected wording is the recommended body below, not a GitHub edit. |
+| Environment replaces a `--list` value | this commit | One sentence in the config-generator README. |
+| Generator exits 0 when every type is skipped | this commit | `main` raises `SystemExit(1)` when it writes no list. |
+| Missing docstrings | this commit | `parse_args`, `_source`, and `CodegenChecker.__init__`. |
 
 The ROCm pull-request quality base skill is not in this workspace. This review uses the hipBLASLt overlay only.
 
@@ -81,13 +84,13 @@ Gaps the 17 tests leave open:
 - Nothing in the tree checks the converted rows against the pull-request YAML. `test_committed_lists_expand_to_nine_integers` requires nine integers and no duplicate row. Replacing or dropping a tile still passes. This review compared the two forms once: both sides returned the same 130,526 rows in the same order.
 - The search that marks a tile unbuildable is not tested. `SettingSearch.core` keeps two DepthU values (`buildability.py:524`). A tile that builds only at a larger DepthU can be dropped with these tests still green.
 - `coverage` is not installed in the container, so geko's coverage floor was not re-run. The 17 tests execute the new loader, writer, and collapse path.
-- A run whose types are all subtile still exits 0, and no test covers that (`generate_buildable_mis.py`). The generator test on this branch mocks one skipped type and still writes the others.
+- A run whose types are all subtile now exits 1. `test_generator_exits_when_every_type_is_skipped` covers that. A mixed run that writes some lists still exits 0.
 
 ## Summary
 
 The approach matches geko. Candidate enumeration moves to `mi_candidates.py` unchanged in structure. The designer consults a list only when `BUILDABLE_MIS` is true and the run is not subtile. The generator builds a generic tuning config with the flag forced off, so it does not read the lists it is writing. Code generation failure is a raised `RuntimeError` from `KernelWriter._getKernelSource` when `ForceGenerateKernel` is false, which is the default. An early exit rejects a kernel whose register pool is already more than 20% over its cap after initialization. That matches `checkResources`, which fails a pool that is over the cap, provided the pool does not shrink later in the body.
 
-The committed lists are the feature, and no test opens them. The search that produced them is also untested. The author's claim that no shipped tile was dropped is not a test in the diff.
+`test_committed_lists_expand_to_nine_integers` opens every committed list. It checks nine integers and no duplicate row. It does not lock those rows to the pull-request YAML. The search that produced the lists is still untested. The author's claim that no shipped tile was dropped is not a test in the diff.
 
 The first pass of this review recorded the lists as about 15 MB and stopped. Measured on the pull-request head, the 148 yaml files are 15,823,209 bytes. The loader kept only the `MatrixInstructions` sequence. This branch replaces that yaml. Each converted file was checked, before the yaml was deleted, to load back to the same nine-integer rows in the same order.
 
@@ -151,25 +154,25 @@ On the pull-request head, `load_buildable_list` is tested with a file the test w
 
 Files: `projects/hipblaslt/utilities/geko/geko/config_generator/buildability.py:520`.
 
-A tile that builds only at a larger DepthU, and that is more than one parameter edit away from the closest failure, is recorded as unbuildable. `buildable_depthus` does not correct that: it runs only after a tile has already built (`buildability.py:699`). The body says a shipped-solution audit found no such tile. That audit is not in the diff, so a later edit to the grid can drop tiles with the unit tests still green.
+`SettingSearch.core` now says DepthU is the two smallest legal values and that every other tuned group is the full product of its entries. The search code is unchanged. A tile that builds only at a larger DepthU, and that is more than one parameter edit away from the closest failure, is still recorded as unbuildable. `buildable_depthus` does not correct that: it runs only after a tile has already built. The shipped-solution audit is not in the diff, so a later edit to the grid can drop tiles with the unit tests still green.
 
 ### Say that the environment wins
 
 Files: `projects/hipblaslt/utilities/geko/geko/config_generator/README.md:149`.
 
-The README lists the config, the environment, and a `--list` file as ways to turn the flag on. `test_buildable_mis_default_off_and_env_wins_over_list` shows `BUILDABLE_MIS=0` forcing the flag off when the list file says true. One sentence should state that order.
+The README now says that when both are set, the environment replaces the `--list` value. `test_buildable_mis_default_off_and_env_wins_over_list` already shows `BUILDABLE_MIS=0` forcing the flag off when the list file says true.
 
 ### Exit non-zero when every requested type is skipped
 
 Files: `projects/hipblaslt/utilities/geko/scripts/generate_buildable_mis.py:116`.
 
-`SubtileOnly` is printed and ignored. A run whose types are all subtile prints `skipped` and exits 0, with no file written.
+`SubtileOnly` is still printed and ignored for that type. If every requested type is skipped, `main` now raises `SystemExit(1)` and writes no file.
 
 ### Docstrings on the new functions
 
 Files: `projects/hipblaslt/utilities/geko/scripts/generate_buildable_mis.py:32`.
 
-`main` now has that docstring. `parse_args`, `_source`, and `CodegenChecker.__init__` (`buildability.py:209`) still do not. Geko's own rule asks for that shape on functions this change adds.
+`parse_args`, `_source`, `main`, and `CodegenChecker.__init__` now have Args, Returns, and Raises. `SettingSearch.core` states the two-DepthU limit and the full group product.
 
 ## Not checked
 

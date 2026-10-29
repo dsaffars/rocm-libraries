@@ -34,6 +34,17 @@ from geko.utils import ensure_tensile_importable
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse the generator command line.
+
+    Args:
+        None
+
+    Returns:
+        The parsed arguments. ``types`` is one or more ``A:D:C`` strings.
+
+    Raises:
+        SystemExit: If a required argument is missing.
+    """
     p = argparse.ArgumentParser(
         description=__doc__.split("\n\n")[0],
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -68,6 +79,18 @@ def parse_args() -> argparse.Namespace:
 
 
 def _source(hipblaslt: Path) -> str:
+    """Describe the hipBLASLt checkout the lists were generated from.
+
+    Args:
+        hipblaslt: Checkout whose HEAD commit is recorded.
+
+    Returns:
+        A short commit id and today's date. The commit is ``unknown`` when
+        git does not print one.
+
+    Raises:
+        None
+    """
     commit = (
         subprocess.run(
             ["git", "-C", str(hipblaslt), "rev-parse", "--short=10", "HEAD"],
@@ -91,6 +114,7 @@ def main() -> None:
     Raises:
         ValueError: If a type string is not three colon-separated fields, or a
             written list cannot be read while duplicate lists are collapsed.
+        SystemExit: If every requested type is skipped and no list is written.
     """
     args = parse_args()
     logging.basicConfig(
@@ -104,6 +128,7 @@ def main() -> None:
 
     mi_candidates.MI_LISTS_DIR = args.output_dir
     source = _source(hipblaslt)
+    wrote = False
     for types in args.types:
         dt, dd, cd = types.split(":")
         for layout in args.layouts:
@@ -135,6 +160,7 @@ def main() -> None:
                 continue
             path = buildable_list_path(args.arch, name)
             B.write_buildable_list(path, verdicts, arch=args.arch, gemm_name=name, source=source)
+            wrote = True
             stages = {}
             for v in verdicts:
                 stages[v.stage or "unbuildable"] = stages.get(v.stage or "unbuildable", 0) + 1
@@ -146,6 +172,8 @@ def main() -> None:
             )
             if args.report_dir:
                 B.write_report(args.report_dir / args.arch / f"{name}.csv", verdicts)
+    if not wrote:
+        raise SystemExit(1)
     collapse_duplicate_lists(args.output_dir / library_logic_architecture(args.arch))
 
 

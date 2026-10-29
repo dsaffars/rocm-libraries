@@ -146,7 +146,7 @@ StreamK kernels need slightly more VGPRs, so the StreamK-off list holds every MI
 plus a few tiles at the register limit, and one list serves runs with either setting. The lists are opt-in
 (`BUILDABLE_MIS: True`); by default MI Designer enumerates every MI as before. With the option on but no list
 for the GEMM type, MI Designer enumerates every MI and logs a warning with the command that generates the list.
-For `geko --tune`, turn it on with the environment variable (any workload source) or in a `--list` file:
+For `geko --tune`, turn it on with the environment variable (any workload source) or in a `--list` file. When both are set, the environment replaces the `--list` value:
 
 ```bash
 BUILDABLE_MIS=1 geko --tune --inline 4096 4096 1 4096 B B S T N --arch gfx950 --devices 0

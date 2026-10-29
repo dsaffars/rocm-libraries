@@ -268,6 +268,44 @@ def test_generator_collapses_lists_after_writing(tmp_path: Path, monkeypatch) ->
     assert (tmp_path / "reports" / "gfx942" / "HHS_NN.csv").is_file()
 
 
+def test_generator_exits_when_every_type_is_skipped(tmp_path: Path, monkeypatch) -> None:
+    import importlib.util
+
+    from geko.config_generator import buildability as buildability_module
+
+    script = Path(__file__).resolve().parents[2] / "scripts" / "generate_buildable_mis.py"
+    spec = importlib.util.spec_from_file_location("generate_buildable_mis_skip", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    def classify(config, hipblaslt, workers, progress):
+        raise buildability_module.SubtileOnly("subtile only")
+
+    monkeypatch.setattr(mi_candidates, "MI_LISTS_DIR", mi_candidates.MI_LISTS_DIR)
+    monkeypatch.setattr(buildability_module, "classify_candidates", classify)
+    monkeypatch.setattr(
+        module,
+        "parse_args",
+        lambda: module.argparse.Namespace(
+            arch="gfx942",
+            types=["H:H:S"],
+            layouts=["TT"],
+            workers=1,
+            hipblaslt=None,
+            output_dir=tmp_path,
+            report_dir=None,
+        ),
+    )
+    monkeypatch.setattr(module, "resolve_hipblaslt_path", lambda _path: tmp_path)
+    monkeypatch.setattr(module, "ensure_tensile_importable", lambda _path: None)
+    monkeypatch.setattr(module, "_source", lambda _path: "review")
+    with pytest.raises(SystemExit) as raised:
+        module.main()
+    assert raised.value.code == 1
+    assert not list(tmp_path.glob("*/*.txt"))
+
+
 def test_committed_lists_expand_to_nine_integers() -> None:
     files = sorted(mi_candidates.MI_LISTS_DIR.glob("*/*.txt"))
     assert files
