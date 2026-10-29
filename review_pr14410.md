@@ -9,10 +9,10 @@ Reviewed head: `34b56c1c741265cdc4bc5f17a0f1c7c1d869cf99`. Diff base: `501708505
 | List files are larger than the loader reads | `bb1220924d09` | Factored `.txt` lists. 148 files, 374,446 bytes, 96 `same_as` aliases. |
 | Title and description | none | Recommended text is below. Not posted. This review does not edit GitHub. |
 | Committed lists are not loaded by a test | `bb1220924d09` | `test_committed_lists_expand_to_nine_integers` loads every committed list. |
-| Search limits are wider than the description | this commit | `SettingSearch.core` documents the two-DepthU limit and the full group product. The search code is unchanged. The corrected wording is the recommended body below, not a GitHub edit. |
-| Environment replaces a `--list` value | this commit | One sentence in the config-generator README. |
-| Generator exits 0 when every type is skipped | this commit | `main` raises `SystemExit(1)` when it writes no list. |
-| Missing docstrings | this commit | `parse_args`, `_source`, and `CodegenChecker.__init__`. |
+| Search limits are wider than the description | `10e789e15c02` | `SettingSearch.core` documents the two-DepthU limit and the full group product. The search code is unchanged. The corrected wording is the recommended body below, not a GitHub edit. |
+| Environment replaces a `--list` value | `10e789e15c02` | One sentence in the config-generator README. |
+| Generator exits 0 when every type is skipped | `10e789e15c02` | `main` raises `SystemExit(1)` when it writes no list. |
+| Missing docstrings | `10e789e15c02` | `parse_args`, `_source`, and `CodegenChecker.__init__`. |
 
 The ROCm pull-request quality base skill is not in this workspace. This review uses the hipBLASLt overlay only.
 
