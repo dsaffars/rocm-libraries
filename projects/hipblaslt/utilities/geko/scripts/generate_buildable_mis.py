@@ -6,7 +6,7 @@
 
 For each GEMM type (layout x data types), every candidate MatrixInstruction is checked with
 TensileLite code generation (CPU only; no GPU is used) and the ones that build within the generic
-(GA) search space's fork ranges are written to mi_lists/<arch>/<GEMM name>.yaml. MI Designer uses
+(GA) search space's fork ranges are written to mi_lists/<arch>/<GEMM name>.txt. MI Designer uses
 the list for every search space except subtile. See geko/config_generator/buildability.py for
 the search. Rerun whenever TensileLite code generation or geko's fork ranges change.
 
@@ -24,7 +24,11 @@ import sys
 import time
 from pathlib import Path
 
-from geko.config_generator.mi_candidates import MI_LISTS_DIR, buildable_list_path
+from geko.config_generator.mi_candidates import (
+    MI_LISTS_DIR,
+    buildable_list_path,
+    collapse_duplicate_lists,
+)
 from geko.paths import resolve_hipblaslt_path
 from geko.utils import ensure_tensile_importable
 
@@ -76,6 +80,18 @@ def _source(hipblaslt: Path) -> str:
 
 
 def main() -> None:
+    """Generate factored buildable-MI lists for the requested GEMM types.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    Raises:
+        ValueError: If a type string is not three colon-separated fields, or a
+            written list cannot be read while duplicate lists are collapsed.
+    """
     args = parse_args()
     logging.basicConfig(
         level=logging.WARNING, format="%(levelname)s: %(message)s", stream=sys.stdout
@@ -84,6 +100,7 @@ def main() -> None:
     ensure_tensile_importable(hipblaslt)
     from geko.config_generator import buildability as B  # imports TensileLite
     from geko.config_generator import mi_candidates
+    from geko.config_generator.constants import library_logic_architecture
 
     mi_candidates.MI_LISTS_DIR = args.output_dir
     source = _source(hipblaslt)
@@ -129,6 +146,7 @@ def main() -> None:
             )
             if args.report_dir:
                 B.write_report(args.report_dir / args.arch / f"{name}.csv", verdicts)
+    collapse_duplicate_lists(args.output_dir / library_logic_architecture(args.arch))
 
 
 if __name__ == "__main__":

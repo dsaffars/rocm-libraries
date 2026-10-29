@@ -749,41 +749,35 @@ def write_buildable_list(
     gemm_name: str,
     source: str,
 ) -> None:
-    """Write the list MI Designer reads: buildable MIs in enumeration order, unbuildable ones as comments."""
-    from geko.config_generator.mi_designer import MFMA, MIDesign
+    """Write the factored list MI Designer reads, in enumeration order.
 
-    def mt(mi: MI) -> str:
-        p = MIDesign.calculate_mfma_parameters(MFMA.from_list(mi))
-        return f"MT{p.MT0}x{p.MT1}"
+    The matrix-instruction prefix is stored once. Rejected tiles stay in the
+    CSV report from ``write_report`` and are not written here.
 
-    buildable = [v for v in verdicts if v.buildable]
-    lines = [
-        f"# Buildable MatrixInstructions for {gemm_name} on {library_logic_architecture(arch)}:\n",
-        "# MIs with at least one kernel TensileLite builds within geko's generic (GA) ranges.\n",
-        "# MI Designer proposes only these. Each line: MI, macro tile, DepthUs it builds at.\n",
-        f"# {len(buildable)} of {len(verdicts)} candidates buildable; the rest are at the end.\n",
-        "# From scripts/generate_buildable_mis.py; rerun when TensileLite or geko changes.\n",
-        "\n",
-        f"Architecture: {library_logic_architecture(arch)}\n",
-        f"GemmType: {gemm_name}\n",
-        f"Source: {source}\n",
-        "MatrixInstructions:\n",
-    ]
+    Args:
+        path: Destination ``.txt`` path.
+        verdicts: One verdict per candidate, in enumeration order.
+        arch: ARCH key recorded in the header comment.
+        gemm_name: GEMM type recorded in the header comment.
+        source: Commit description recorded in the header comment.
 
-    def note(v: Verdict) -> str:
-        return mt(v.mi) + (f"  DepthU {','.join(map(str, v.depthu))}" if v.depthu else "")
+    Returns:
+        None
 
-    lines += [f"  - [{', '.join(map(str, v.mi))}]  # {note(v)}\n" for v in buildable]
-    lines.append(
-        "\n# Not buildable (closest kernel: overflow of its most over-used resource, and why):\n"
+    Raises:
+        ValueError: If a buildable instruction does not have nine integers.
+    """
+    from geko.config_generator.mi_candidates import format_buildable_instructions
+
+    buildable = [v.mi for v in verdicts if v.buildable]
+    header = (
+        f"# Buildable matrix instructions for {gemm_name} on {library_logic_architecture(arch)}\n"
+        f"# source: {source}\n"
+        "# A five-integer line ending in a colon is the prefix.\n"
+        "# Each four-integer line is appended to it.\n"
     )
-    for v in verdicts:
-        if not v.buildable:
-            reason = v.reason.replace("\n", " ")[:100]
-            over = "no resource counts" if math.isinf(v.overflow) else f"{v.overflow:+.1%}"
-            lines.append(f"#   [{', '.join(map(str, v.mi))}]  {mt(v.mi)}  {over}  {reason}\n")
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("".join(lines))
+    path.write_text(header + format_buildable_instructions(buildable))
 
 
 def write_report(path: Path, verdicts: Sequence[Verdict]) -> None:

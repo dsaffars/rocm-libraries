@@ -136,7 +136,7 @@ MI Designer's candidate MatrixInstructions come from geko's tiling rules
 ([`mi_candidates.enumerate_candidate_mis`](mi_candidates.py)), which do not know whether TensileLite can
 build a kernel for an MI: large tiles often overflow registers or LDS for every parameter setting, and a
 tuning run then spends its budget on kernels that fail code generation. With `BUILDABLE_MIS: True`, for GEMM types
-with a list in [`mi_lists/`](mi_lists/)`<arch>/<GEMM name>.yaml`, MI Designer uses only the MIs in it: those for which
+with a list in [`mi_lists/`](mi_lists/)`<arch>/<GEMM name>.txt`, MI Designer uses only the MIs in it: those for which
 TensileLite code generation builds at least one kernel with every other parameter inside the generic (GA)
 search space's fork ranges. One list serves generic (GA) and heuristic runs: it is computed for the generic
 space, and the heuristic space (the older exhaustive search, rarely used) offers only a few values generic does
@@ -161,9 +161,10 @@ python3 scripts/generate_buildable_mis.py --hipblaslt /path/to/hipblaslt --arch 
   --types B:B:S H:H:S F8:B:S --layouts TN NN NT TT --workers 64
 ```
 
-Each list names the rocm-libraries commit it was generated from, gives every buildable MI's DepthUs in its
-comment (e.g. `# MT256x128  DepthU 64,128`; MI Designer ignores comments), and ends with the unbuildable MIs
-and why the setting closest to fitting failed. Finding where each MI stops building roughly doubles the time.
+Each list names the rocm-libraries commit it was generated from. The line rules, including the colon,
+the four-integer tails, `same_as`, and `#` comments, are in [`mi_lists/README.md`](mi_lists/README.md).
+Rejected tiles and the DepthU values they failed at are not stored in the list;
+`--report-dir` writes that verdict as CSV. Finding where each MI stops building roughly doubles the time.
 On 352 workers: about 7 h for all 96 gfx950 lists, 3 h for the 52 gfx942 lists. Each MI runs in a fresh worker
 process; a worker can still need several GB for a large tile (the gfx1250 FP4 lists peak around 1.7 TB at 352
 workers), so lower `--workers` on machines with less memory. GEMM types MI Designer tunes only as subtile kernels
