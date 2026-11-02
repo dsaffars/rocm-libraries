@@ -66,7 +66,7 @@ Tensile reads the process environment variable `CU` in `getCUCount`. When `CU` i
 
 ## Test Result
 
-The four unit files run for this review passed: 95 tests. The pull request's report of 532 passed and 39 skipped was not re-run. Changed-line coverage was not measured, because the coverage tool is not installed here.
+The four unit files run for this review passed: 95 tests. The pull request's report of 532 passed and 39 skipped was not re-run. Changed-line coverage was not measured, and geko's whole-package 80% floor was not measured.
 
 ## Submission Checklist
 
@@ -81,9 +81,11 @@ Low. The int8 bias and scale flags now match the shipped `I8I8S` and `I8II` libr
 
 Ran, in the geko tree, `tests/test_library_unit.py`, `tests/config_generator/test_config_merge_writer_sections_params_unit.py`, `tests/test_schemas_synthetic_workload.py`, and `tests/test_optim_core_unit.py`. Result: 95 passed.
 
-Not run: the full geko suite the description cites, a GPU benchmark, and changed-line coverage. `import coverage` fails in this environment. The coverage tool was not installed.
+Not run: the full geko suite the description cites, and a GPU benchmark.
 
-The pull-request page says every modified line is covered and that the project coverage check fails because head coverage is 68.59% against an 80% target. This review did not reproduce either number.
+Changed-line coverage was not measured. The container's system Python has no `coverage` module and no `pytest-cov`. This review did not try to install either one. TensileLite already has `projects/hipblaslt/tensilelite/.tox/coverage-unit/bin/coverage`, and that program was not used. Geko has no tox environment, so `tox -e coverage` was not run. That command enforces the whole-package floor of 80% in `utilities/geko/pyproject.toml`, including files this diff does not change. This review did not measure that percentage and did not add tests for unmodified lines.
+
+The pull-request page says every modified line is covered. It also says a project check fails because head coverage is 68.59% against an 80% target. That 68.59% is the hipBLASLt flag, not geko's package percentage. `projects/hipblaslt/TESTING.md` says the hipBLASLt C++ coverage check is not required. Codecov's `GEKO` flag is a separate project target of 80%, and `codecov.yml` sets no patch target. This review did not reproduce any of those numbers.
 
 Gaps the tests that did run still leave:
 
@@ -159,4 +161,4 @@ Files: `library.py:362`.
 
 ## Not checked
 
-The full geko suite, changed-line coverage, a GPU benchmark, a live `rocminfo` comparison against `HARDWARE_MAP`, and the GitHub Actions log. The downstream driver named in the pull-request body is not in this diff, and this review did not look for it outside the repository.
+The full geko suite, a GPU benchmark, a live `rocminfo` comparison against `HARDWARE_MAP`, and the GitHub Actions log. Changed-line coverage and geko's whole-package 80% floor were not measured. The downstream driver named in the pull-request body is not in this diff, and this review did not look for it outside the repository.
