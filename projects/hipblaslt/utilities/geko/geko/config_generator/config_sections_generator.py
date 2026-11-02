@@ -59,7 +59,20 @@ class ConfigSectionGenerator:
 
     @staticmethod
     def _is_fp8_family(dtype: str) -> bool:
-        """Whether *dtype* is a real fp8/bf8-family DataType (not int8)."""
+        """Return whether a Tensile data-type letter is an 8-bit float.
+
+        Int8 uses the letter ``I8``. A check for the character ``8`` treats
+        that letter as an 8-bit float.
+
+        Args:
+            dtype: Tensile data-type letter, such as ``F8`` or ``I8``.
+
+        Returns:
+            True for ``F8``, ``F8N``, ``B8``, ``F8B8``, and ``B8F8``.
+
+        Raises:
+            None
+        """
         return dtype in ConfigSectionGenerator._FP8_FAMILY_DATA_TYPES
 
     @staticmethod
@@ -82,11 +95,19 @@ class ConfigSectionGenerator:
         return max(round((-(m + n + k) * 0.015 + 431) / b), 5)
 
     def _i8_bias_supported(self) -> bool:
-        """Whether an int8 GEMM supports Bias.
+        """Return whether this int8 GEMM may request a bias vector.
 
-        Rule: Int8 only supports Bias when ComputeDataType is "S" (float);
-        with int32 compute (MFMA accumulation), there is no bias-capable
-        kernel variant at all.
+        Shipped int8 libraries enable bias only when the compute type is
+        32-bit float. Integer compute leaves ``UseBias`` off.
+
+        Args:
+            None. The GEMM type is ``self._gt``.
+
+        Returns:
+            True when the compute-type letter is ``S``.
+
+        Raises:
+            None
         """
         return self._convert_type(self._gt.compute_data_type) == "S"
 
@@ -122,7 +143,18 @@ class ConfigSectionGenerator:
     # ------------------------------------------------------------------
 
     def _build_problem_type(self) -> Dict[str, Any]:
-        """Generate ProblemType section for the config."""
+        """Generate the ProblemType section for this GEMM.
+
+        Args:
+            None. The GEMM type and architecture come from ``self.config``.
+
+        Returns:
+            ProblemType keys for the tuning YAML. A key prefixed with ``#``
+            is emitted as a YAML comment.
+
+        Raises:
+            None
+        """
         val_HighPrecisionAccumulate = self._gt.data_type != self._gt.compute_data_type
         if self._is_tf32(self._gt.data_type):
             val_HighPrecisionAccumulate = False
@@ -169,7 +201,8 @@ class ConfigSectionGenerator:
             pt['ComplexConjugateA'] = "True" if self._gt.transA == "C" else "False"
             pt['ComplexConjugateB'] = "True" if self._gt.transB == "C" else "False"
         pt['UseBeta'] = "True"
-        bias_epi_tag = "#" if (epi_tag == "#" or (self._gt.data_type == "I8" and not self._i8_bias_supported())) else ""
+        i8_without_bias = self._gt.data_type == "I8" and not self._i8_bias_supported()
+        bias_epi_tag = "#" if epi_tag == "#" or i8_without_bias else ""
         pt[f'{bias_epi_tag}UseBias'] = "1"
 
         pt[f'{epi_tag}Activation'] = "True"

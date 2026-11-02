@@ -35,6 +35,31 @@ def test_tensile_triple_mixed_bh():
     assert a_t == "bf16_r" and b_t == "f16_r" and c_t == "bf16_r" and comp == "f32_r"
 
 
+def test_i8_tensile_triple_round_trips() -> None:
+    """Map int8 letters through hipBLASLt names and back.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    Raises:
+        None
+    """
+    triples = (("I8", "I8", "S"), ("I8", "I8", "I"), ("I8", "I", "S"))
+    for data_type, dest_type, compute_type in triples:
+        a_type, b_type, c_type, compute = GemmType._tensile_triple_to_hipblaslt(
+            data_type, dest_type, compute_type
+        )
+        mapped = GemmType.from_hipblaslt("N", "N", a_type, b_type, c_type, compute)
+        assert (mapped.data_type, mapped.dest_data_type, mapped.compute_data_type) == (
+            data_type,
+            dest_type,
+            compute_type,
+        )
+
+
 def test_tensile_triple_xf32():
     """Test XF32 (TensorFloat32) dtype mapping: a_type should be f32_r, not xf32_r."""
     a_t, b_t, c_t, comp = GemmType._tensile_triple_to_hipblaslt("X", "S", "S")

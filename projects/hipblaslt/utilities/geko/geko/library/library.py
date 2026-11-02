@@ -371,10 +371,22 @@ class Library:
         epilogue_suffix = f"{bias_segment}_HAS{('_' + sab) if sab is not None else ''}_SAV_UserArgs"
 
         def update_epilogue_string(s: str, suffix: str) -> str:
+            """Replace an existing epilogue suffix, including an int32 bias letter.
+
+            Args:
+                s: Solution or library name. Names without ``_UserArgs`` are unchanged.
+                suffix: Epilogue suffix to insert before ``_UserArgs``.
+
+            Returns:
+                The name with one epilogue suffix.
+
+            Raises:
+                None
+            """
             if "_UserArgs" not in s:
                 return s
             left, right = s.split("_UserArgs", 1)
-            pattern = r'_(?:Bias[SBH]*|HAS|HA_S|SABV?|SAV)'
+            pattern = r'_(?:Bias[BHIS]*|HAS|HA_S|SABV?|SAV)'
             left = re.sub(pattern, '', left)
             s = left + "_UserArgs" + right
             return s.replace("_UserArgs", suffix)

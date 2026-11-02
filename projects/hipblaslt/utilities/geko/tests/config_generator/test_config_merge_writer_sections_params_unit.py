@@ -367,6 +367,22 @@ def test_i8_use_bias_enabled_for_float_compute():
     assert "#UseBias" not in gen._problem_type
 
 
+def test_i8_problem_type_does_not_request_scale_ab() -> None:
+    """Int8 is not an 8-bit float, so the problem type omits UseScaleAB.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    Raises:
+        None
+    """
+    gen = csg.ConfigSectionGenerator(_section_cfg(dtype="I8"))
+    assert not any("UseScaleAB" in key for key in gen._problem_type)
+
+
 def test_mx_f8_problem_type_skips_use_scale_ab():
     """MX F8 should not emit UseScaleAB on gfx1250 (never sets it for MX there)."""
     gen = csg.ConfigSectionGenerator(_section_cfg_mx(dtype="F8", mx=True, arch="gfx1250"))

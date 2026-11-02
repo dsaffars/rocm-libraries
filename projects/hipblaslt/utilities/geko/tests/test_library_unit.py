@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pytest
@@ -106,6 +107,93 @@ def test_add_epilogues_updates_solution_names() -> None:
     assert lib.problem["Activation"] is True
     assert "BiasDataTypeList" in lib.problem
     assert "Bias" in lib.solutions[0]["BaseName"]
+
+
+def test_add_epilogues_int8_float_compute_uses_float_bias_only() -> None:
+    """Int8 with float compute keeps a float bias and drops other bias types.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    Raises:
+        None
+    """
+    lib = _mk_lib(problem_overrides={"DataType": 8, "DestDataType": 6, "ComputeDataType": 0})
+    lib.add_epilogues()
+    assert lib.problem["UseBias"] == 1
+    assert lib.problem["BiasDataTypeList"] == [0]
+    assert "_BiasS_" in lib.solutions[0]["BaseName"]
+
+
+def test_add_epilogues_int8_int_compute_disables_bias() -> None:
+    """Int8 with int32 compute, or with compute omitted, has an empty bias list.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    Raises:
+        None
+    """
+    for overrides in (
+        {"DataType": 8, "DestDataType": 6, "ComputeDataType": 6},
+        {"DataType": 8, "DestDataType": 8},
+    ):
+        lib = _mk_lib(problem_overrides=overrides)
+        if "ComputeDataType" not in overrides:
+            del lib.problem["ComputeDataType"]
+        lib.add_epilogues()
+        assert lib.problem["UseBias"] == 0
+        assert lib.problem["BiasDataTypeList"] == []
+        assert "_Bias" not in lib.solutions[0]["BaseName"]
+
+
+def test_add_epilogues_int32_destination_suffix_is_stable() -> None:
+    """A second epilogue update still strips the int32 bias letter ``I``.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    Raises:
+        None
+    """
+    lib = _mk_lib(problem_overrides={"DataType": 4, "DestDataType": 6, "ComputeDataType": 0})
+    lib.add_epilogues()
+    once = lib.solutions[0]["BaseName"]
+    assert "_BiasSI_" in once
+    lib.add_epilogues()
+    assert lib.solutions[0]["BaseName"] == once
+
+
+def test_create_bench_input_int8_warning_names_the_rejected_initialization(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """The int8 initialization warning quotes the value the caller asked for.
+
+    Args:
+        tmp_path: Directory for the benchmark file.
+        caplog: Pytest log capture.
+
+    Returns:
+        None
+
+    Raises:
+        None
+    """
+    lib = _mk_lib(problem_overrides={"DataType": 8, "DestDataType": 8})
+    with caplog.at_level(logging.WARNING, logger="GEKO"):
+        bench_file, _ = lib.create_bench_input(tmp_path, initialization="trig_float")
+    assert "trig_float" in caplog.text
+    gemms = yaml.safe_load(Path(bench_file).read_text())
+    assert gemms[0]["initialization"] == "rand_int"
 
 
 def test_trim_removes_duplicate_size_entries() -> None:
